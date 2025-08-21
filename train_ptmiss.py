@@ -18,7 +18,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Flatten, Reshape, Dense, BatchNormalization, Concatenate, Embedding
 from tensorflow.keras import optimizers, initializers
 from tensorflow.keras.layers import Lambda
-from tensorflow.keras.backend import slice
+import tensorflow as tf
 
 import tensorflow.keras.backend as K
 
@@ -32,7 +32,7 @@ def create_model(n_features=8, n_features_cat=3, n_dense_layers=3, activation='t
     # continuous features
     # [b'PF_dxy', b'PF_dz', b'PF_eta', b'PF_mass', b'PF_puppiWeight', b'PF_charge', b'PF_fromPV', b'PF_pdgId',  b'PF_px', b'PF_py']
     inputs_cont = Input(shape=(maxNPF, n_features), name='input')
-    pxpy = Lambda(lambda x: slice(x, (0, 0, n_features-2), (-1, -1, -1)))(inputs_cont)
+    pxpy = Lambda(lambda x: tf.slice(x, (0, 0, n_features-2), (-1, -1, -1)))(inputs_cont)
 
     embeddings = []
     for i_emb in range(n_features_cat):
