@@ -113,10 +113,27 @@ Xr = [Xi] + Xc
 indices = np.array([i for i in range(len(Yr))])
 indices_train, indices_test = train_test_split(indices, test_size=0.2, random_state=7)
 
-Xr_train = [x[indices_train] for x in Xr]
-Xr_test = [x[indices_test] for x in Xr]
+# Split data into train/test sets
+Xi_train, Xi_test = Xi[indices_train], Xi[indices_test]
+Xc1_train, Xc1_test = Xc1[indices_train], Xc1[indices_test]
+Xc2_train, Xc2_test = Xc2[indices_train], Xc2[indices_test]
+Xc3_train, Xc3_test = Xc3[indices_train], Xc3[indices_test]
 Yr_train = Yr[indices_train]
 Yr_test = Yr[indices_test]
+
+# Create properly structured input dictionaries
+Xr_train = {
+    'input': Xi_train,
+    'input_cat0': Xc1_train,
+    'input_cat1': Xc2_train,
+    'input_cat2': Xc3_train
+}
+Xr_test = {
+    'input': Xi_test,
+    'input_cat0': Xc1_test,
+    'input_cat1': Xc2_test,
+    'input_cat2': Xc3_test
+}
 
 lr_scale = 1.
 clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(Y)/batch_size, mode='triangular2')
