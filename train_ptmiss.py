@@ -104,6 +104,9 @@ emb_input_dim = {
 }
 print('Embedding input dimensions', emb_input_dim)
 
+# inputs, outputs = create_output_graph()
+inputs, outputs = create_model(n_features=n_features_pf, n_features_cat=n_features_pf_cat, with_bias=opt.withbias)
+
 # prepare training/val data
 Yr = Y
 Xr = [Xi] + Xc
@@ -114,9 +117,6 @@ Xr_train = [x[indices_train] for x in Xr]
 Xr_test = [x[indices_test] for x in Xr]
 Yr_train = Yr[indices_train]
 Yr_test = Yr[indices_test]
-
-# inputs, outputs = create_output_graph()
-inputs, outputs = create_model(n_features=n_features_pf, n_features_cat=n_features_pf_cat, with_bias=opt.withbias)
 
 lr_scale = 1.
 clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(Y)/batch_size, mode='triangular2')
