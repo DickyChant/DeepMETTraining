@@ -7,7 +7,7 @@ import os
 import pathlib
 import datetime
 import h5py
-import optparse
+# import optparse
 import numpy as np
 
 from sklearn.model_selection import train_test_split
@@ -18,14 +18,7 @@ from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Flatten, Reshape, Dense, BatchNormalization, Concatenate, Embedding
 from tensorflow.keras import optimizers, initializers
 from tensorflow.keras.layers import Lambda
-
-from sklearn.model_selection import train_test_split
-from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
-from tensorflow.keras.utils import plot_model
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import Input, Flatten, Reshape, Dense, BatchNormalization, Concatenate, Embedding
-from tensorflow.keras import optimizers, initializers
-from tensorflow.keras.layers import Lambda
+import tensorflow as tf
 
 import tensorflow.keras.backend as K
 
@@ -49,7 +42,7 @@ def create_model(n_features=8, n_features_cat=3, n_dense_layers=3, activation='t
         else:
             inputs.append(input_cat)
         embedding = Embedding(input_dim=emb_input_dim[i_emb], output_dim=emb_out_dim, embeddings_initializer=initializers.RandomNormal(mean=0., stddev=0.4/emb_out_dim), name='embedding{}'.format(i_emb))(input_cat)
-        embedding = Reshape((maxNPF, 8))(embedding)
+        embedding = Reshape((maxNPF, emb_out_dim))(embedding)
         embeddings.append(embedding)
 
     x = Concatenate()([inputs[0]] + [emb for emb in embeddings])
@@ -64,27 +57,27 @@ def create_model(n_features=8, n_features_cat=3, n_dense_layers=3, activation='t
     #print('Shape of last dense layer', x.shape)
 
     x = Concatenate()([x, pxpy])
-    x = weighted_sum_layer(ndim=2, with_bias=with_bias, name = "weighted_sum" if with_bias else "output")(x)
+    x = weighted_sum_layer(with_bias, name = "weighted_sum" if with_bias else "output")(x)
 
     if with_bias:
         x = Dense(2, activation='linear', name='output')(x)
 
-    outputs = x 
+    outputs = x
     return inputs, outputs
 
 
 # configuration
-usage = 'usage: %prog [options]'
-parser = optparse.OptionParser(usage)
-parser.add_option('-i', '--input', dest='input',
-                  help='input file', default='tree_100k.h5', type='string')
-parser.add_option('-l', '--load', dest='load',
-                  help='load model from timestamp', default='', type='string')
-parser.add_option('--nfiles', dest='nfiles', 
-                  help='number of h5df files', default=100, type='int')
-parser.add_option('--withbias', dest='withbias',
-                  help='include bias term in the DNN', default=False, action="store_true")
-(opt, args) = parser.parse_args()
+# usage = 'usage: %prog [options]'
+# parser = optparse.OptionParser(usage)
+# parser.add_option('-i', '--input', dest='input',
+#                   help='input file', default='tree_100k.h5', type='string')
+# parser.add_option('-l', '--load', dest='load',
+#                   help='load model from timestamp', default='', type='string')
+# parser.add_option('--nfiles', dest='nfiles',
+#                   help='number of h5df files', default=100, type='int')
+# parser.add_option('--withbias', dest='withbias',
+#                   help='include bias term in the DNN', default=False, action="store_true")
+# (opt, args) = parser.parse_args()
 
 # general setup
 maxNPF = 4500
@@ -100,7 +93,7 @@ emb_out_dim = 8
 ##
 ## read input and do preprocessing
 ##
-Xorg, Y = read_input(opt.input)
+Xorg, Y = read_input('./input.txt')
 Y = Y / -normFac
 
 Xi, Xc1, Xc2, Xc3 = preProcessing(Xorg)
@@ -118,7 +111,7 @@ emb_input_dim = {
 print('Embedding input dimensions', emb_input_dim)
 
 # inputs, outputs = create_output_graph()
-inputs, outputs = create_model(n_features=n_features_pf, n_features_cat=n_features_pf_cat, with_bias=opt.withbias)
+inputs, outputs = create_model(n_features=n_features_pf, n_features_cat=n_features_pf_cat, with_bias=False)
 
 # prepare training/val data
 Yr = Y
@@ -134,8 +127,7 @@ Xc3_train, Xc3_test = Xc3[indices_train], Xc3[indices_test]
 Yr_train = Yr[indices_train]
 Yr_test = Yr[indices_test]
 
-# Create properly structured input dictionaries with keys in the exact order the model expects
-# Model expects: ['input', 'input_cat0', 'input_cat1', 'input_cat2']
+# Create properly structured input dictionaries
 Xr_train = {
     'input': Xi_train,
     'input_cat0': Xc1_train,
@@ -155,23 +147,20 @@ clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(Y)/
 # create the model
 model = Model(inputs=inputs, outputs=outputs)
 optimizer = optimizers.Adam(learning_rate=1., clipnorm=1.)
-
-model.compile(loss=custom_loss, optimizer=optimizer, 
+model.compile(loss=custom_loss, optimizer=optimizer,
                metrics=['mean_absolute_error', 'mean_squared_error'])
 model.summary()
 
-if opt.load:
-    timestamp = opt.load
-else:
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
+
+timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M")
 path = f'models/{timestamp}'
 pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
 # plot_model(model, to_file=f'{path}/model.png', show_shapes=True)  # Disabled due to graphviz not being installed
 
-if opt.load:
-    model.load_weights(f'{path}/model.keras')
-    print(f'Restored model {timestamp}')
+# if opt.load:
+#     model.load_weights(f'{path}/model.keras')
+#     print(f'Restored model {timestamp}')
 
 with open(f'{path}/summary.txt', 'w') as txtfile:
     # Pass the file handle in as a lambda function to make it callable
@@ -194,9 +183,8 @@ stop_on_nan = tf.keras.callbacks.TerminateOnNaN()
 
 
 # Run training
-history = model.fit(Xr_train, 
+history = model.fit(Xr_train,
                     Yr_train,
-                    batch_size=batch_size,  # Explicitly set batch_size to match the declared value
                     epochs=epochs,
                     verbose=1,  # switch to 1 for more verbosity
                     validation_data=(Xr_test, Yr_test),

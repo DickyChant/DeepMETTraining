@@ -28,6 +28,11 @@ class weighted_sum_layer(Layer):
 
     def call(self, inputs):
         # input #B x E x F
+        # Add runtime debugging to see actual tensor shapes during training
+        print(f"[RUNTIME DEBUG] weighted_sum_layer input shape: {inputs.shape}")
+        print(f"[RUNTIME DEBUG] input dtype: {inputs.dtype}")
+        print(f"[RUNTIME DEBUG] input min/max: {tf.reduce_min(inputs)}, {tf.reduce_max(inputs)}")
+        
         weights = inputs[:, :, 0:1] - 1.  # B x E x 1
         if not self.with_bias:
             tosum = inputs[:, :, 1:]  # B x E x F-1
