@@ -98,6 +98,12 @@ Y = Y / -normFac
 
 Xi, Xc1, Xc2, Xc3 = preProcessing(Xorg)
 print(Xc1.dtype)
+print(f"Xi shape: {Xi.shape}")
+print(f"Xc1 shape: {Xc1.shape}")
+print(f"Xc2 shape: {Xc2.shape}")
+print(f"Xc3 shape: {Xc3.shape}")
+print(f"maxNPF: {maxNPF}")
+print(f"n_features: {n_features_pf}")
 Xc = [Xc1, Xc2, Xc3]
 emb_input_dim = {
     i:int(np.max(Xc[i][0:1000])) + 1 for i in range(n_features_pf_cat)
@@ -152,7 +158,7 @@ else:
 path = f'models/{timestamp}'
 pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 
-plot_model(model, to_file=f'{path}/model.png', show_shapes=True)
+# plot_model(model, to_file=f'{path}/model.png', show_shapes=True)  # Disabled due to graphviz not being installed
 
 if opt.load:
     model.load_weights(f'{path}/model.keras')
