@@ -135,9 +135,9 @@ class CyclicLR(Callback):
         logs = logs or {}
 
         if self.clr_iterations == 0:
-            K.set_value(self.model.optimizer.learning_rate, self.base_lr)
+            self.model.optimizer.learning_rate.assign(self.base_lr)
         else:
-            K.set_value(self.model.optimizer.learning_rate, self.clr())
+            self.model.optimizer.learning_rate.assign(self.clr())
 
     def on_batch_end(self, epoch, logs=None):
 
@@ -145,12 +145,11 @@ class CyclicLR(Callback):
         self.trn_iterations += 1
         self.clr_iterations += 1
 
-        K.set_value(self.model.optimizer.learning_rate, self.clr())
+        self.model.optimizer.learning_rate.assign(self.clr())
 
         self.history.setdefault(
             'lr', []).append(
-            K.get_value(
-                self.model.optimizer.learning_rate))
+            self.model.optimizer.learning_rate.numpy())
         self.history.setdefault('iterations', []).append(self.trn_iterations)
 
         for k, v in logs.items():
@@ -158,4 +157,4 @@ class CyclicLR(Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        logs['lr'] = K.get_value(self.model.optimizer.learning_rate)
+        logs['lr'] = self.model.optimizer.learning_rate.numpy()
