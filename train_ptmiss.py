@@ -11,19 +11,16 @@ import optparse
 import numpy as np
 
 from sklearn.model_selection import train_test_split
-import keras
-from keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
-from keras.utils import plot_model
-from keras.models import Model
-from keras.layers import Input, Flatten, Reshape, Dense, BatchNormalization, Concatenate, Embedding
-from keras import optimizers, initializers
-from keras.layers import Lambda
-from keras.backend import slice
-
 import tensorflow as tf
-import keras.backend as K
+from tensorflow.keras.callbacks import ReduceLROnPlateau, ModelCheckpoint, EarlyStopping, CSVLogger
+from tensorflow.keras.utils import plot_model
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Flatten, Reshape, Dense, BatchNormalization, Concatenate, Embedding
+from tensorflow.keras import optimizers, initializers
+from tensorflow.keras.layers import Lambda
+from tensorflow.keras.backend import slice
 
-from tensorflow import train
+import tensorflow.keras.backend as K
 
 # Local imports
 from cyclical_learning_rate import CyclicLR
@@ -126,7 +123,7 @@ clr = CyclicLR(base_lr=0.0003*lr_scale, max_lr=0.001*lr_scale, step_size=len(Y)/
 
 # create the model
 model = Model(inputs=inputs, outputs=outputs)
-optimizer = optimizers.Adam(lr=1., clipnorm=1.)
+optimizer = optimizers.Adam(learning_rate=1., clipnorm=1.)
 model.compile(loss=custom_loss, optimizer=optimizer, 
                metrics=['mean_absolute_error', 'mean_squared_error'])
 model.summary()
@@ -157,12 +154,11 @@ csv_logger = CSVLogger(f"{path}/loss_history.csv")
 # this saves our model architecture + parameters into model.h5
 model_checkpoint = ModelCheckpoint(f'{path}/model.h5', monitor='val_loss',
                                    verbose=0, save_best_only=True,
-                                   save_weights_only=False, mode='auto',
-                                   period=1)
+                                   save_weights_only=False, mode='auto')
 reduce_lr = ReduceLROnPlateau(
-    monitor='val_loss', factor=0.5, patience=4, min_lr=0.000001, cooldown=3, verbose=1)
+    monitor='val_loss', factor=0.5, patience=4, min_learning_rate=0.000001, cooldown=3, verbose=1)
 
-stop_on_nan = keras.callbacks.TerminateOnNaN()
+stop_on_nan = tf.keras.callbacks.TerminateOnNaN()
 
 
 # Run training
@@ -177,6 +173,7 @@ history = model.fit(Xr_train,
 # Plot loss
 plot_history(history, path)
 
+# Save the model in TF2 format
+model.save(f'{path}/model', save_format='tf')
+# Also save in HDF5 format for compatibility
 model.save(f'{path}/model.h5')
-from tensorflow import saved_model
-saved_model.simple_save(K.get_session(), f'{path}/saved_model', inputs={t.name:t for t in model.input}, outputs={t.name:t for t in model.outputs})
