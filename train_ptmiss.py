@@ -138,7 +138,7 @@ pathlib.Path(path).mkdir(parents=True, exist_ok=True)
 plot_model(model, to_file=f'{path}/model.png', show_shapes=True)
 
 if opt.load:
-    model.load_weights(f'{path}/model.h5')
+    model.load_weights(f'{path}/model.keras')
     print(f'Restored model {timestamp}')
 
 with open(f'{path}/summary.txt', 'w') as txtfile:
@@ -151,8 +151,8 @@ early_stopping = EarlyStopping(monitor='val_loss', patience=10, verbose=1)
 csv_logger = CSVLogger(f"{path}/loss_history.csv")
 
 # model checkpoint callback
-# this saves our model architecture + parameters into model.h5
-model_checkpoint = ModelCheckpoint(f'{path}/model.h5', monitor='val_loss',
+# this saves our model architecture + parameters into model.keras
+model_checkpoint = ModelCheckpoint(f'{path}/model.keras', monitor='val_loss',
                                    verbose=0, save_best_only=True,
                                    save_weights_only=False, mode='auto')
 reduce_lr = ReduceLROnPlateau(
@@ -173,7 +173,7 @@ history = model.fit(Xr_train,
 # Plot loss
 plot_history(history, path)
 
-# Save the model in TF2 format
+# Save the model in Keras format
+model.save(f'{path}/model.keras')
+# Also save in TF2 format for compatibility
 model.save(f'{path}/model', save_format='tf')
-# Also save in HDF5 format for compatibility
-model.save(f'{path}/model.h5')
